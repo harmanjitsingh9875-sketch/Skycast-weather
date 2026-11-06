@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#eef4ff">
+  <meta name="description" content="SkyCast India - live weather and 7-day forecasts for Indian cities.">
+  <title>SkyCast India | Weather</title>
+  <style>
+    :root {
+      --ink:#17243b; --muted:#65738b; --blue:#3978e8; --pale:#eaf2ff;
+      --card:rgba(255,255,255,.88); --line:#e3eaf5; --shadow:0 12px 35px rgba(45,75,125,.09);
+    }
+    * { box-sizing:border-box }
+    body {
+      margin:0; min-height:100vh; color:var(--ink);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+      background:linear-gradient(160deg,#eaf3ff 0%,#f7f9fd 48%,#edf4ff 100%);
+    }
+    .wrap { width:min(760px,100%); margin:auto; padding:22px 16px 42px }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px }
+    .brand { display:flex; align-items:center; gap:10px; font-size:22px; font-weight:800; letter-spacing:-.7px }
+    .brand-icon { width:42px; height:42px; border-radius:15px; display:grid; place-items:center; background:#fff; box-shadow:var(--shadow); font-size:24px }
+    .country { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase }
+    .search-row { display:flex; gap:9px; margin-bottom:16px }
+    .search-box { flex:1; display:flex; align-items:center; gap:9px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:0 14px; min-width:0; box-shadow:0 4px 18px rgba(45,75,125,.04) }
+    .search-box input { width:100%; border:0; outline:0; padding:15px 0; color:var(--ink); font-size:15px; background:transparent }
+    button { border:0; cursor:pointer; font:inherit }
+    .icon-btn { width:50px; min-width:50px; border-radius:16px; background:#fff; border:1px solid var(--line); color:var(--blue); font-size:20px }
+    .search-btn { padding:0 18px; border-radius:16px; background:var(--blue); color:#fff; font-weight:700 }
+    .suggestions { display:none; position:relative; z-index:5; margin-top:-8px; margin-bottom:14px; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow) }
+    .suggestions button { display:block; width:100%; text-align:left; padding:12px 15px; background:#fff; color:var(--ink); border-bottom:1px solid #f0f3f8 }
+    .suggestions button:last-child { border-bottom:0 }
+    .suggestions button:active { background:var(--pale) }
+    .status { min-height:22px; margin:0 2px 10px; color:var(--muted); font-size:13px }
+    .hero { overflow:hidden; position:relative; padding:24px; border-radius:28px; color:#fff; background:linear-gradient(135deg,#397eea,#6fa7f4 58%,#9ac8ff); box-shadow:0 18px 40px rgba(57,120,232,.2) }
+    .hero:after { content:""; position:absolute; width:220px; height:220px; right:-75px; top:-90px; border-radius:50%; background:rgba(255,255,255,.12) }
+    .hero-top { position:relative; z-index:1; display:flex; justify-content:space-between; gap:10px; align-items:flex-start }
+    .place { font-size:21px; font-weight:750 }
+    .date { margin-top:5px; color:rgba(255,255,255,.84); font-size:13px }
+    .weather-symbol { font-size:58px; line-height:1 }
+    .temp-line { display:flex; align-items:center; gap:12px; margin:20px 0 4px }
+    .temperature { font-size:76px; line-height:1; font-weight:300; letter-spacing:-5px }
+    .condition { font-size:16px; font-weight:650 }
+    .feels { margin-top:7px; color:rgba(255,255,255,.84); font-size:13px }
+    .hi-lo { margin-top:12px; font-size:14px; color:rgba(255,255,255,.94) }
+    .metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0 20px }
+    .metric { background:var(--card); border:1px solid rgba(255,255,255,.8); border-radius:19px; padding:15px 13px; box-shadow:0 5px 18px rgba(45,75,125,.04) }
+    .metric-label { color:var(--muted); font-size:12px }
+    .metric-value { margin-top:7px; font-size:19px; font-weight:750 }
+    .section { margin-top:21px }
+    .section-head { display:flex; align-items:center; justify-content:space-between; margin:0 3px 11px }
+    h2 { margin:0; font-size:17px; letter-spacing:-.3px }
+    .subtle { color:var(--muted); font-size:12px }
+    .forecast { display:grid; gap:8px }
+    .day { display:grid; grid-template-columns:1.1fr .7fr 1.3fr .8fr; align-items:center; gap:8px; padding:13px 15px; background:var(--card); border:1px solid rgba(255,255,255,.9); border-radius:16px; font-size:13px }
+    .day-name { font-weight:700 }
+    .day-icon { font-size:20px; text-align:center }
+    .day-desc { color:var(--muted); font-size:12px }
+    .day-temps { text-align:right; font-weight:700; white-space:nowrap }
+    .footer { margin-top:26px; text-align:center; color:var(--muted); font-size:11px; line-height:1.6 }
+    .footer a { color:var(--blue) }
+    .loading { opacity:.65; pointer-events:none }
+    @media (max-width:430px) {
+      .wrap { padding:17px 12px 32px }
+      .hero { padding:20px; border-radius:24px }
+      .temperature { font-size:68px }
+      .metrics { gap:7px }
+      .metric { padding:12px 9px }
+      .metric-value { font-size:17px }
+      .day { grid-template-columns:1fr .55fr 1fr .8fr; padding:12px 10px }
+      .day-desc { display:none }
+      .search-btn { padding:0 13px }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap" id="app">
+    <header>
+      <div class="brand"><span class="brand-icon">🌤️</span><span>SkyCast</span></div>
+      <div class="country">INDIA WEATHER</div>
+    </header>
+
+    <form class="search-row" id="searchForm">
+      <label class="search-box">
+        <span aria-hidden="true">🔎</span>
+        <input id="cityInput" type="search" placeholder="Search an Indian city..." autocomplete="off" aria-label="Search Indian city">
+      </label>
+      <button class="search-btn" type="submit">Search</button>
+      <button class="icon-btn" id="locateBtn" type="button" aria-label="Use my location" title="Use my location">⌖</button>
+    </form>
+    <div class="suggestions" id="suggestions"></div>
+    <p class="status" id="status" role="status">Loading weather…</p>
+
+    <section class="hero" aria-live="polite">
+      <div class="hero-top">
+        <div>
+          <div class="place" id="place">Amritsar, Punjab</div>
+          <div class="date" id="today">India</div>
+        </div>
+        <div class="weather-symbol" id="mainIcon">⛅</div>
+      </div>
+      <div class="temp-line">
+        <div class="temperature"><span id="temperature">--</span><span style="font-size:.48em;vertical-align:top">°</span></div>
+        <div>
+          <div class="condition" id="condition">Loading…</div>
+          <div class="feels">Feels like <span id="feels">--</span>°C</div>
+        </div>
+      </div>
+      <div class="hi-lo" id="hiLo">H: --° &nbsp; L: --°</div>
+    </section>
+
+    <section class="metrics" aria-label="Current weather details">
+      <div class="metric"><div class="metric-label">💧 Humidity</div><div class="metric-value" id="humidity">--%</div></div>
+      <div class="metric"><div class="metric-label">💨 Wind</div><div class="metric-value" id="wind">-- km/h</div></div>
+      <div class="metric"><div class="metric-label">🌧️ Rain chance</div><div class="metric-value" id="rain">--%</div></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><h2>7-day forecast</h2><span class="subtle">Next 7 days</span></div>
+      <div class="forecast" id="forecast">
+        <div class="day">Getting forecast…</div>
+      </div>
+    </section>
+
+    <div class="footer">
+      Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · Free API for non-commercial use.<br>
+      Forecasts are model-based and may differ from local observations.
+    </div>
+  </main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const weatherTypes = {
+    0:["Clear sky","☀️"],1:["Mainly clear","🌤️"],2:["Partly cloudy","⛅"],3:["Overcast","☁️"],
+    45:["Fog","🌫️"],48:["Depositing rime fog","🌫️"],51:["Light drizzle","🌦️"],53:["Drizzle","🌦️"],55:["Heavy drizzle","🌧️"],
+    56:["Freezing drizzle","🌧️"],57:["Heavy freezing drizzle","🌧️"],61:["Light rain","🌦️"],63:["Rain","🌧️"],65:["Heavy rain","🌧️"],
+    66:["Freezing rain","🌧️"],67:["Heavy freezing rain","🌧️"],71:["Light snow","🌨️"],73:["Snow","🌨️"],75:["Heavy snow","❄️"],
+    77:["Snow grains","🌨️"],80:["Rain showers","🌦️"],81:["Rain showers","🌧️"],82:["Heavy rain showers","⛈️"],
+    85:["Snow showers","🌨️"],86:["Heavy snow showers","❄️"],95:["Thunderstorm","⛈️"],96:["Thunderstorm with hail","⛈️"],99:["Severe thunderstorm","⛈️"]
+  };
+  function weatherInfo(code) { return weatherTypes[code] || ["Weather conditions","🌤️"]; }
+  function dayName(dateString, index) {
+    if (index === 0) return "Today";
+    if (index === 1) return "Tomorrow";
+    return new Intl.DateTimeFormat("en-IN",{weekday:"short"}).format(new Date(dateString+"T12:00:00"));
+  }
+  function prettyDate(dateString) {
+    return new Intl.DateTimeFormat("en-IN",{weekday:"long",day:"numeric",month:"long"}).format(new Date(dateString+"T12:00:00"));
+  }
+  function setStatus(message, isError=false) {
+    $("status").textContent = message;
+    $("status").style.color = isError ? "#b42318" : "";
+  }
+  function showForecast(daily) {
+    $("forecast").innerHTML = daily.time.map((date,i) => {
+      const [label,icon] = weatherInfo(daily.weather_code[i]);
+      const rain = daily.precipitation_probability_max?.[i];
+      return `<div class="day">
+        <span class="day-name">${dayName(date,i)}</span>
+        <span class="day-icon" title="${label}">${icon}</span>
+        <span class="day-desc">${label}${rain != null ? " · "+rain+"% rain" : ""}</span>
+        <span class="day-temps">${Math.round(daily.temperature_2m_max[i])}° / ${Math.round(daily.temperature_2m_min[i])}°</span>
+      </div>`;
+    }).join("");
+  }
+  async function loadWeather(latitude, longitude, cityName, adminName="") {
+    $("app").classList.add("loading");
+    setStatus("Getting the latest available weather…");
+    try {
+      const url = new URL("https://api.open-meteo.com/v1/forecast");
+      url.search = new URLSearchParams({
+        latitude, longitude,
+        current:"temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m",
+        daily:"weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+        timezone:"auto", forecast_days:"7"
+      }).toString();
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Weather service is temporarily unavailable.");
+      const data = await response.json();
+      if (!data.current || !data.daily) throw new Error("Weather data was incomplete.");
+      const current = data.current, daily = data.daily;
+      const [description,icon] = weatherInfo(current.weather_code);
+      $("place").textContent = [cityName,adminName].filter(Boolean).join(", ");
+      $("today").textContent = prettyDate(daily.time[0]) + " · Local time";
+      $("mainIcon").textContent = icon;
+      $("temperature").textContent = Math.round(current.temperature_2m);
+      $("condition").textContent = description;
+      $("feels").textContent = Math.round(current.apparent_temperature);
+      $("humidity").textContent = Math.round(current.relative_humidity_2m)+"%";
+      $("wind").textContent = Math.round(current.wind_speed_10m)+" km/h";
+      $("rain").textContent = (daily.precipitation_probability_max?.[0] ?? 0)+"%";
+      $("hiLo").textContent = `H: ${Math.round(daily.temperature_2m_max[0])}°   L: ${Math.round(daily.temperature_2m_min[0])}°`;
+      showForecast(daily);
+      const updated = current.time ? new Date(current.time).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}) : "";
+      setStatus("Weather loaded" + (updated ? " · Updated "+updated : "") + " · Times are local to the selected city.");
+    } catch (error) {
+      setStatus(error.message || "Could not load weather. Please try again.", true);
+    } finally {
+      $("app").classList.remove("loading");
+    }
+  }
+  async function searchCity(query) {
+    const clean = query.trim();
+    if (!clean) { setStatus("Enter an Indian city name to search.", true); return; }
+    setStatus("Searching Indian cities…");
+    $("suggestions").style.display = "none";
+    try {
+      const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
+      url.search = new URLSearchParams({name:clean,count:"10",language:"en",format:"json"}).toString();
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("City search is unavailable right now.");
+      const data = await response.json();
+      const results = (data.results || []).filter(item => item.country_code === "IN");
+      if (!results.length) throw new Error("No matching Indian city found. Try another spelling.");
+      if (results.length === 1) {
+        const city = results[0];
+        await loadWeather(city.latitude,city.longitude,city.name,city.admin1 || "India");
+      } else {
+        $("suggestions").innerHTML = results.slice(0,6).map((city,index) =>
+          `<button type="button" data-index="${index}">${city.name}${city.admin1 ? ", "+city.admin1 : ""} · India</button>`
+        ).join("");
+        $("suggestions").style.display = "block";
+        $("suggestions").querySelectorAll("button").forEach(button => button.addEventListener("click", async () => {
+          const city = results[Number(button.dataset.index)];
+          $("cityInput").value = city.name;
+          $("suggestions").style.display = "none";
+          await loadWeather(city.latitude,city.longitude,city.name,city.admin1 || "India");
+        }));
+        setStatus("Choose the correct city from the list.");
+      }
+    } catch (error) {
+      setStatus(error.message || "City search failed.", true);
+    }
+  }
+  $("searchForm").addEventListener("submit", event => {
+    event.preventDefault();
+    searchCity($("cityInput").value);
+  });
+  $("locateBtn").addEventListener("click", () => {
+    if (!navigator.geolocation) { setStatus("Location is not supported by this browser.",true); return; }
+    setStatus("Requesting your location permission…");
+    navigator.geolocation.getCurrentPosition(async position => {
+      const {latitude,longitude} = position.coords;
+      await loadWeather(latitude,longitude,"Your location","India");
+    }, error => {
+      const message = error.code === 1 ? "Location permission was denied. Search for a city instead." : "Could not get your location. Please search for a city.";
+      setStatus(message,true);
+    }, {enableHighAccuracy:false,timeout:12000,maximumAge:300000});
+  });
+
+  // Default city on first visit. Use the location button for GPS weather.
+  loadWeather(31.6340,74.8723,"Amritsar","Punjab");
+</script>
+</body>
+</html>
